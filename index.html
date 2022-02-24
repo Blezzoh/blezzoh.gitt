@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>lab07.md</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><p><strong>Overview</strong></p>
+<p>For this lab you will be experimenting with the useEffect React hook.</p>
+<p><strong>Part 0: Review Relevant ReactJS Tutorial and W3schools Web Pages</strong></p>
+<p><strong>&gt;&gt;</strong>: See ReactJS <a href="https://reactjs.org/docs/hooks-effect.html">Using the Effect Hook</a> and W3Schools <a href="https://www.w3schools.com/react/react_useeffect.asp">React useEffect</a> web articles. You may also want to refer to the <a href="https://codesandbox.io/s/cit382-22w-wk07-37by4">Week 7 Sandbox</a>.</p>
+<p><strong>Part 1: Overview and Lab Setup</strong></p>
+<p>The purpose of this lab is to explore managing component side effects using the <strong>useEffect</strong> hook. Examples of when to use the <strong>useEffec</strong>t hook are below.</p>
+<ul>
+<li>fetching data, typically via asynchronous REST calls</li>
+<li>direct DOM manipulation
+<ul>
+<li>document.title</li>
+<li>canvas</li>
+<li>third-party libraries such as Google Maps API</li>
+</ul>
+</li>
+<li>timers</li>
+</ul>
+<p>The type of side effects handled with useEffect are the type when no other means of “reacting” is possible. Basic React state changes that result in UI changes are still coded within JSX.</p>
+<p>The lab application will present a countdown and a button to start and stop the countdown. When the countdown reaches 0, the user will be able to click the Stop button. The amount of time between the countdown reaching 0 and the time of the user clicking the stop button will be measured and displayed.</p>
+<p>The application requires <strong>useEffect</strong> to work with timers.</p>
+<p>Let’s create a new CodeSandbox for this lab.</p>
+<p><strong>&gt;&gt;</strong>: Create a new CodeSandbox called  <strong>lab-07</strong>. Modify the JSX returned from App to only return Lab 7 within h1 elements.</p>
+<p>We will need to import the <strong>useState</strong> and <strong>useEffect</strong> React hooks.</p>
+<p><strong>&gt;&gt;</strong>: Add the following <strong>import</strong> statement to the top of <strong>App.js</strong>.</p>
+<p>import { useState, useEffect } from ‘react’;</p>
+<p>The application will require a parent component to encapsulate the attendance functionality.</p>
+<p><strong>&gt;&gt;</strong>: Add a function-based component called <strong>ReactionTimer</strong>, and declare an instance of the <strong>ReactionTimer</strong> component in the <strong>App</strong> component.</p>
+<p>Below are images of the finished user interface (UI). No CSS styles were applied other than the CodeSandbox default.</p>
+<p>Startup UI:</p>
+<p><img src="https://canvas.uoregon.edu/courses/193831/files/13288379/preview" alt="Lab 7 Startup UI"></p>
+<p>After clicking the Start button during countdown:</p>
+<p><img src="https://canvas.uoregon.edu/courses/193831/files/13288405/preview" alt="Lab 7 Running UI"></p>
+<p>After clicking the Stop button to see reaction time.</p>
+<p><img src="https://canvas.uoregon.edu/courses/193831/files/13288406/preview" alt="Lab 7 Stopped UI"></p>
+<p><strong>Part 2: Countdown Constant and State Variables</strong></p>
+<p>The countdown of five seconds will be stored in a global constant variable.</p>
+<p><strong>&gt;&gt;</strong>: Add a global constant variable <strong>StartNum</strong> initialized to <strong>5</strong>.</p>
+<p>In order to make the application work, we will need the following state variables, state variable functions, and default values:</p>
+<ul>
+<li><strong>isRunning</strong>, <strong>setIsRunning</strong>, default <strong>false</strong>: the status of whether the countdown is occurring or not</li>
+<li><strong>count</strong>, <strong>setCount</strong>, default to <strong>StartNum</strong>: the current countdown value</li>
+<li><strong>startDatetime</strong>, <strong>setStartDatetime</strong>, default to <strong>null</strong>: The initial date and time value after the countdown reaches 0</li>
+<li><strong>secondsDiff</strong>, <strong>setSecondsDiff</strong>, default to <strong>0</strong>: The difference in seconds between when the countdown reached 0 and the user clicked the stop button</li>
+</ul>
+<p><strong>&gt;&gt;</strong>: Add the above state variables, state variable functions, and default values.</p>
+<pre><code>// code after this step
+import  React,  {  useEffect,  useState  }  from  "react";
+import  "./styles.css";
+
+const  startNum  =  5;
+export  default  function  App()  {
+	const  [isRunning, setIsRunning] =  useState(false);
+	const  [count, setCount] =  useState(startNum);
+	const  [startDatetime, setStartDatetime] =  useState(null);
+	const  [secondsDiff, setSecondsDiff] =  useState(0);
+	return  (
+
+		&lt;div  className="App"&gt;
+			&lt;h1&gt;Lab 07&lt;/h1&gt;
+			&lt;h3&gt;CountDown: {}&lt;/h3&gt;
+			&lt;h3&gt;Reaction Time: {} &lt;/h3&gt;
+			&lt;button &gt;
+				Start
+			&lt;/button&gt;
+		&lt;/div&gt;
+
+);
+
+}
+</code></pre>
+<p><strong>Part 2: Countdown Constant and State Variables</strong></p>
+<p>The UI elements are listed below.</p>
+<ul>
+<li>Lab 7 title (h1)</li>
+<li>Countdown label and <strong>count</strong> state variable (h3)</li>
+<li>Reaction time label and <strong>secondsDiff</strong> state variable (h3)</li>
+<li>Start/stop button</li>
+</ul>
+<p><strong>&gt;&gt;</strong>: Add the UI elements.</p>
+<p><strong>Part 3: Implementing the Button</strong></p>
+<p>The <strong>button</strong> element has the following settings functionality:</p>
+<ul>
+<li>Displays “Start” if <strong>isRunning</strong> is <strong>false</strong>, and “Stop” if <strong>isRunning</strong> is <strong>true</strong></li>
+<li>Disabled after start until <strong>count</strong> reaches <strong>0</strong></li>
+<li>Resets <strong>count</strong> to <strong>StartNum</strong> when clicked and <strong>isRunning</strong> is <strong>false</strong></li>
+<li>Toggles <strong>isRunning</strong> betwen <strong>true</strong> and <strong>false</strong> with every click</li>
+</ul>
+<p>The <strong>button</strong> will respond to click events by calling an event handler constant expression function <strong>handleButtonClick</strong>.</p>
+<p>The <strong>button</strong> will require the following properties:</p>
+<ul>
+<li><strong>onClick</strong>: call <strong>handleButtonClick</strong> event handler constant expression function</li>
+<li><strong>disabled</strong>: set to <strong>isRunning</strong> is <strong>true</strong> and <strong>count !== 0</strong></li>
+</ul>
+<p><strong>&gt;&gt;</strong>: Implement a a constant function expression <strong>handleButtonClick</strong>, and add a <strong>console.log()</strong> statement to verify the callback function is called when the <strong>button</strong> is clicked.</p>
+<p><strong>&gt;&gt;</strong>: Add the <strong>onClick</strong> event property to the <strong>button</strong>, and reference he <strong>handleButtonClick</strong> event handler</p>
+<p><strong>&gt;&gt;</strong>: Add the <strong>disabled</strong> property to the <strong>button</strong>, and set the value to <strong>isRunning &amp;&amp; count !== 0</strong>.</p>
+<p><strong>&gt;&gt;</strong>: Ensure the <strong>button</strong> displays either “Stop” if <strong>isRunning</strong> is <strong>true</strong>, or “Start” if <strong>isRunning</strong> is <strong>false</strong>, using the ternary operator ( <strong>? :</strong> ).</p>
+<p><strong>&gt;&gt;</strong>: Verify the changes, and that the <strong>handleButtonClick</strong> displays a message in the <strong>console</strong> when clicked.</p>
+<p>When the <strong>button</strong> is clicked, if the countdown is not happening (i.e. <strong>!isRunning</strong>), then the <strong>button</strong> must display “Start,” and the user is attempting to start the countdown. During countdown startup, the countdown start variable, <strong>count</strong>, must be reset to <strong>StartNum</strong>.</p>
+<p><strong>&gt;&gt;</strong>: Add code to the <strong>handleButtonClick</strong> function that calls <strong>setCount(StartNum)</strong> if <strong>!isRunning</strong>.</p>
+<p>Every time the <strong>button</strong> is clicked, the user is proceeding from Start to Stop, or Stop to Start, so we will always toggle the value of <strong>isRunning</strong> to the opposite value of the current value.</p>
+<p><strong>&gt;&gt;</strong>: Add code to the <strong>handleButtonClick</strong> function that calls <strong>setIsRunning(!isRunning)</strong>.</p>
+<p><strong>&gt;&gt;</strong>: Verify the behavior works as expected when the <strong>button</strong> is clicked. The <strong>button</strong> should change to “Stop,” be disabled, and remain disabled.</p>
+<pre><code>
+/**
+ code after this step. 
+ */
+import  React,  {  useEffect,  useState  }  from  "react";
+
+import  "./styles.css";
+
+  
+
+const  startNum  =  5;
+export  default  function  App()  {
+
+	const  [isRunning, setIsRunning] =  useState(false);
+	const  [count, setCount] =  useState(startNum);
+	const  [startDatetime, setStartDatetime] =  useState(null);
+	const  [secondsDiff, setSecondsDiff] =  useState(0);
+
+  
+
+	const  handleButtonClick  =  ()  =&gt;  {
+		/*
+		on the click handler the order matters since 
+		!isRunning needs to be updated after the condition
+		**/
+		if  (!isRunning)  setCount(startNum);
+		setIsRunning(!isRunning);
+
+	};
+
+	console.log("State:",  isRunning,  count,  startDatetime,  secondsDiff);
+
+	return  (
+
+		&lt;div  className="App"&gt;
+			&lt;h1&gt;Lab 07&lt;/h1&gt;
+			&lt;h3&gt;CountDown: {count}&lt;/h3&gt;
+			&lt;h3&gt;Reaction Time: {secondsDiff} &lt;/h3&gt;
+			&lt;button  disabled={count !==  0  &amp;&amp; isRunning} onClick={handleButtonClick}&gt;
+				{isRunning ?  "Stop"  :  "Start"}
+			&lt;/button&gt;
+		&lt;/div&gt;
+
+	);
+
+}
+</code></pre>
+<p><strong>Part 4: Timer and useEffect</strong></p>
+<p>Reminder of the basic functionality:</p>
+<ul>
+<li>start the countdown by clicking on the button, change the button text to “Stop”, disable the button, and start and display the countdown</li>
+<li>when 0 is reached, enable the button, hold the count at 0, and record the current date and time</li>
+<li>when the button is clicked, get the difference in seconds between the date and time when the button was clicked, and when the countdown reached 0</li>
+<li>display the time difference as the reaction time</li>
+</ul>
+<p>To accomplish the missing functionality, we’ll need to add three useEffect blocks. The first useEffect will deal with handling the timer for the countdown.</p>
+<p><strong>&gt;&gt;</strong>: Add the following useEffect, and test that the countdown works, and the button changes from “Start” to “Stop,” is disabled, then re-enabled when the countdown reaches 0.</p>
+<p>useEffect(() =&gt; {<br>
+// Timer effect<br>
+console.log(’=&gt; useEffect called’);</p>
+<pre><code>// Only use timer if running  
+if (!isRunning) return null;  
+
+// Effect is a series of 1000 ms timeouts and cleanup  
+let timer = setTimeout(() =&gt; {  
+  console.log('=&gt; setTimeout callback function called ');  
+  // Decrement counter  
+  setCount((count) =&gt; (count - 1 &gt;= 0 ? count - 1 : 0));  
+}, 1000);  
+
+return () =&gt; {  
+  console.log('=&gt; clearTimeout called');  
+  // Return cleanup function  
+  // Called after every render if one of the dependency  
+  // state variables changed  
+  // See https://reactjs.org/docs/hooks-effect.html#example-using-hooks-1  
+  return clearTimeout(timer);  
+};  
+</code></pre>
+<p>}, [isRunning, count]);</p>
+<p><strong>Part 5: Capturing the Moment the Countdown Reaches 0</strong></p>
+<p>When the countdown reaches 0 (i.e. <strong>isRunning &amp;&amp; count === 0</strong>), we want to set the <strong>startDatetime</strong> state variable with a <strong>Date()</strong> object to record that moment. Because we are relying on a timer for this moment to occur, we will use a second <strong>useEffect</strong> block. This effect will set the <strong>startDatetime</strong> state variable when the <strong>count</strong> reaches <strong>0</strong> and the countdown is occurring.</p>
+<p><strong>&gt;&gt;</strong>: Add the following <strong>useEffect</strong> block to capture the moment the countdown reaches 0.</p>
+<p>useEffect(() =&gt; {<br>
+// Set the initial start datetime when the countdown reaches 0<br>
+if (isRunning &amp;&amp; count === 0) {<br>
+setStartDatetime(new Date());<br>
+}<br>
+}, [isRunning, count]);</p>
+<p>You can test the functionality, but you currently do not have a way to know whether the moment is being saved in the state, so let’s add a <strong>console.log()</strong> statement just before the <strong>return</strong> expression to output the current state variable values. The values will be displayed each time the component is re-rendered (i.e. the function is called again).</p>
+<p><strong>&gt;&gt;</strong>: Add the following statement just before the <strong>return</strong> expression. Test the application, and confirm the <strong>startDatetime</strong> state variable is updated when the countdown reaches 0.</p>
+<p>console.log(‘State:’, isRunning, count, startDatetime, secondsDiff);</p>
+<pre><code>/**
+ code after this step. 
+ */
+import  React,  {  useEffect,  useState  }  from  "react";
+
+import  "./styles.css";
+
+  
+
+const  startNum  =  5;
+
+export  default  function  App()  {
+
+	const  [isRunning, setIsRunning] =  useState(false);
+	const  [count, setCount] =  useState(startNum);
+	const  [startDatetime, setStartDatetime] =  useState(null);
+	const  [secondsDiff, setSecondsDiff] =  useState(0);
+
+	const  handleButtonClick  =  ()  =&gt;  {
+	/*
+	on the click handler the order matters since 
+	!isRunning needs to be updated after the condition
+	**/
+		if  (!isRunning)  setCount(startNum);
+		setIsRunning(!isRunning);
+
+	};
+	
+	useEffect(()  =&gt;  {
+		// first time, we don't useEffect to alter anything
+		if  (!isRunning)  return  null;
+
+		// this is the last use effect
+		// since this use effect runs when isRunning and count changes we can move this here
+		if  (isRunning  &amp;&amp;  count  ===  0)  {
+			setStartDatetime(new  Date());
+		}
+		// count changes every second
+		let  timer  =  setTimeout(()  =&gt;  {
+			console.log("=&gt; setTimeout callback function called ");
+			setCount((count)  =&gt;  (count  &gt;  0  ?  count  -  1  :  0));
+		},  1000);
+
+		/*this function is very important since we need to clear the timeout before
+		creating a new one.
+		Sequence of useEffect:
+
+		1. when it is invoked it runs the body of the function
+		2. next time it is invoked it runs the return function in step 1(aka it clears the timeout) 
+		then it run it's body
+		----
+		in this context, setTimeout runs first then the function exists
+		next time it is called it calls clearTimout(timer) before setTimeout
+		----
+		more information: read explanation that has 40 upvotes here:
+		https://stackoverflow.com/questions/56800694/what-is-the-expected-return-of-useeffect-used-for
+		*/
+
+		return  ()  =&gt;  {
+			console.log("=&gt; clearTimeout called");
+			return  clearTimeout(timer);
+		};
+	},  [isRunning,  count]);
+
+	console.log("State:",  isRunning,  count,  startDatetime,  secondsDiff);
+	return  (
+	&lt;div  className="App"&gt;
+		&lt;h1&gt;Lab 07&lt;/h1&gt;
+		&lt;h3&gt;CountDown: {count}&lt;/h3&gt;
+		&lt;h3&gt;Reaction Time: {secondsDiff} &lt;/h3&gt;
+		&lt;button  disabled={count !==  0  &amp;&amp; isRunning} onClick={handleButtonClick}&gt;
+			{isRunning ?  "Stop"  :  "Start"}
+		&lt;/button&gt;
+	&lt;/div&gt;
+
+	);
+
+}
+
+</code></pre>
+<p><strong>Part 6: Capture the Reaction Time</strong></p>
+<p>The final effect will capture the moment the user clicks the <strong>button</strong> after the countdown has reached 0, calculate the reaction in seconds, and update the <strong>secondsDiff</strong> state variable.</p>
+<p><strong>&gt;&gt;</strong>: Add the following effect to capture the reaction time when the <strong>button</strong> is clicked after the countdown reaches 0. Verify the application now works per the stated functionality.</p>
+<p>useEffect(() =&gt; {<br>
+// Stop effect, get seconds difference<br>
+if (count &gt; 0 || isRunning) return null;<br>
+const now = new Date();<br>
+const diffMS = Math.abs(now.getTime() - startDatetime.getTime());<br>
+setSecondsDiff(diffMS / 1000);<br>
+}, [count, isRunning, startDatetime]);</p>
+<p>Working with <strong>useEffect</strong> involves a different approach to programming than the traditional sequential pattern, and instead uses a cause and effect paradigm.</p>
+<pre><code>/**
+ code after this step. 
+ */
+import  React,  {  useEffect,  useState  }  from  "react";
+
+import  "./styles.css";
+
+  
+
+const  startNum  =  5;
+
+export  default  function  App()  {
+
+	const  [isRunning, setIsRunning] =  useState(false);
+	const  [count, setCount] =  useState(startNum);
+	const  [startDatetime, setStartDatetime] =  useState(null);
+	const  [secondsDiff, setSecondsDiff] =  useState(0);
+
+	const  handleButtonClick  =  ()  =&gt;  {
+	/*
+	on the click handler the order matters since 
+	!isRunning needs to be updated after the condition
+	**/
+		if  (!isRunning)  setCount(startNum);
+		setIsRunning(!isRunning);
+
+	};
+	
+	useEffect(()  =&gt;  {
+		// first time, we don't useEffect to alter anything
+		if  (!isRunning)  return  null;
+
+		// this is the last use effect
+		// since this use effect runs when isRunning and count changes we can move this here
+		if  (isRunning  &amp;&amp;  count  ===  0)  {
+			setStartDatetime(new  Date());
+		}
+		// count changes every second
+		let  timer  =  setTimeout(()  =&gt;  {
+			console.log("=&gt; setTimeout callback function called ");
+			setCount((count)  =&gt;  (count  &gt;  0  ?  count  -  1  :  0));
+		},  1000);
+
+		/*this function is very important since we need to clear the timeout before
+		creating a new one.
+		Sequence of useEffect:
+
+		1. when it is invoked it runs the body of the function
+		2. next time it is invoked it runs the return function in step 1(aka it clears the timeout) 
+		then it run it's body
+		----
+		in this context, setTimeout runs first then the function exists
+		next time it is called it calls clearTimout(timer) before setTimeout
+		----
+		more information: read explanation that has 40 upvotes here:
+		https://stackoverflow.com/questions/56800694/what-is-the-expected-return-of-useeffect-used-for
+		*/
+
+		return  ()  =&gt;  {
+			console.log("=&gt; clearTimeout called");
+			return  clearTimeout(timer);
+		};
+	},  [isRunning,  count]);
+
+	useEffect(() =&gt; {
+		if (count &gt; 0 || isRunning) return null;
+
+		const now = new Date();
+		// differnce in millisecond between two date
+		const diffMS = Math.abs(now.getTime() - startDatetime.getTime());
+		setSecondsDiff(diffMS / 1000);
+
+	}, [count, isRunning, startDatetime]);
+	
+	console.log("State:",  isRunning,  count,  startDatetime,  secondsDiff);
+	
+	return  (
+	&lt;div  className="App"&gt;
+		&lt;h1&gt;Lab 07&lt;/h1&gt;
+		&lt;h3&gt;CountDown: {count}&lt;/h3&gt;
+		&lt;h3&gt;Reaction Time: {secondsDiff} &lt;/h3&gt;
+		&lt;button  disabled={count !==  0  &amp;&amp; isRunning} onClick={handleButtonClick}&gt;
+			{isRunning ?  "Stop"  :  "Start"}
+		&lt;/button&gt;
+	&lt;/div&gt;
+
+	);
+
+}
+</code></pre>
+<p><strong>Lab Deliverables</strong></p>
+<p><strong>Reminder: Do NOT submit the node_modules folder or any git folders</strong>.</p>
+<p>You will need to create a compressed file called <strong>lab07.zip</strong> that contains the files of the local React application. Below are the expected files:</p>
+<ul>
+<li>package.json</li>
+<li>public folder
+<ul>
+<li>index.html</li>
+</ul>
+</li>
+<li>src folder
+<ul>
+<li>App.js</li>
+<li>index.js</li>
+<li>styles.css</li>
+</ul>
+</li>
+</ul>
+<p>The <strong>lab07.zip</strong> file will be a deliverable on Project 6.</p>
+</div>
+</body>
+
+</html>
